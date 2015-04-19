@@ -12,14 +12,17 @@ int watchAVstate=0;
 String contComm="";//收集串口发出的命令标签，用于蓝牙串口透传控制
 /*---------------以上初始化所有的控制命令的状态都是关闭-----------------------*/
 int plugs[8] = {2,3,4,5,6,7,8,9};//分配控制插座的开关引脚
+int plugstate[8];//用来记录插口电平，LOW就是低电平为0，HIGH高电平为1
+int stopTime[8] = {200,200,200,2000,200,2000,200,200};//这个数组用来配置等待时间，由于电脑或者小盒子等主机类设备会有开关机时间所以插口等待时间需要长点！
 void setup()
 {
 	for(int i=0;i<8;i++)//初始化数字引脚2-9为高电平，控制8个继电器状态为关闭
 	{
-		pinMode(plugs[i],OUTPUT);
-		digitalWrite(plugs[i],HIGH);
+		pinMode(plugs[i],OUTPUT);//引脚为输出
+		digitalWrite(plugs[i],HIGH);//引脚为高电平
+		plugstate[i]= HIGH; //状态置1
 	}
-	Serial.begin(115200);//打开串口通讯
+	Serial.begin(9600);//打开串口通讯
 }
 
 void TVPlug(int state)//电视机插口开关函数
@@ -35,6 +38,19 @@ void TVPlug(int state)//电视机插口开关函数
 		TVPlugState=0;//将电视插口状态置为0，表示断电状态
 	}
 }
+
+void plugContral(int plugNum,char state)//插口控制函数，带2个参数，插口编号从0-7，状态为LOW或HIGH
+{
+	digitalWrite(plugs[plugNum],state);//按参数控制数字插口
+	plugstate[plugNum] = state;//在插口数组中写入状态，LOW是0，HIGH是1
+	delay(stopTime[plugNum]);//按数组中相应值停留一会
+	for(int i=0;i<8;i++)
+	{
+		Serial.print(plugstate[i]);
+	}
+}
+
+
 
 void StereoAMPPlug(int state)//立体声功放（包括前级、后级）插口开关函数
 {
@@ -240,44 +256,9 @@ void watchAV(int state)//控制是否观看网络电视
 
 void closeAllPlug()//关闭所有的开关
 {
-	if(NetSTPlugState==1)//如果网络机顶盒是开的就关闭
+	for(int i=0;i<8;i++)
 	{
-		NetSTPlug(0);
-		delay(2000);//暂停10秒，待其安全关闭
-	}
-	if(DiskPlayPlugState==1)//如果碟机是开的就关闭
-	{
-		DiskPlayPlug(0);
-		delay(2000);//暂停10秒，待其安全关闭
-	}
-	if(CTSTPlugState==1)//如果有线电视机顶盒是开的就关闭
-	{
-		CTSTPlug(0);
-		delay(2000);//暂停10秒，待其安全关闭
-	}
-	if(TVPlugState==1)//如果电视机是开的就关闭
-	{
-		TVPlug(0);
-		delay(2000);//电视机无所谓所以等1秒就可以了
-	}
-	if(AvAMPPlugState==1)//如果家庭影院功放是开的就关闭
-	{
-		AvAMPPlug(0);
-		delay(2000);//停5秒，等它安全关闭
-	}
-	if(StereoAMPPlugState==1)//如果立体声功放是开的就关闭
-	{
-		StereoAMPPlug(0);
-		delay(2000);//这个也等5秒
-	}
-	if(NetPlugState==1)//如果网络设备是开的也都关了
-	{
-		NetPlug(0);
-		delay(1000);//等1秒应该够了
-	}
-	if(otherPlugState==1)
-	{
-		otherPlug(0);//不等了，插线板都呀关了
+		plugContral(i,HIGH);
 	}
 }
 
@@ -334,25 +315,25 @@ void loop()
 		}
 		if(contComm == "DVDup")
 		{
-			DiskPlayPlug(1);
+			plugContral(6,LOW);
 			Serial.println(contComm);
 			contComm="";
 		}
 		if(contComm == "DVDdown")
 		{
-			DiskPlayPlug(0);
+			plugContral(6,HIGH);
 			Serial.println(contComm);
 			contComm="";
 		}
 		if(contComm == "USBup")
 		{
-			otherPlug(1);
+			plugContral(7,LOW);
 			Serial.println(contComm);
 			contComm="";
 		}
 		if(contComm == "USBdown")
 		{
-			otherPlug(0);
+			plugContral(7,HIGH);
 			Serial.println(contComm);
 			contComm="";
 		}
