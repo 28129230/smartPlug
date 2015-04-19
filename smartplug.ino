@@ -11,7 +11,6 @@ int watchTVState=0;
 int watchAVstate=0;
 String contComm="";
 /*---------------以上初始化所有的控制命令的状态都是关闭-----------------------*/
-int plugControl;//读取串口发送来的指令
 int plugs[8] = {2,3,4,5,6,7,8,9};//分配控制插座的开关引脚
 void setup()
 {
